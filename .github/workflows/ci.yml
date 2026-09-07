@@ -1,0 +1,22 @@
+name: Elevator Controller CI
+
+on:
+  push:
+    paths:
+      - "day1-embedded-demo/**"
+  pull_request:
+    paths:
+      - "day1-embedded-demo/**"
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: day1-embedded-demo
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: make build
+      - name: Run self-checks
+        run: make run
