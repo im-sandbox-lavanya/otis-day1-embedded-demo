@@ -168,3 +168,63 @@ Explain what state_to_string does and why it needs a switch statement.
 Use a lightweight/auto-selected model for the explanation above, then switch
 to a stronger model in Agent mode for the harder tiered-speed change in
 `apply_speed_limit` - see README.md Topic 6 for the full talking points.
+
+## Mode Comparison - Ask vs Plan vs Agent
+
+Same task, three chat modes, so the room can see each mode's distinct
+behavior side by side. Builds on the fire-service question teed up in
+Topic 5.
+
+### Ask mode - understand, no edits
+
+Switch the chat mode picker to **Ask**, then:
+
+```
+What would it take to add a fire-service (Phase I recall) mode to this
+elevator controller? Identify the affected files/functions and describe
+the expected safety behavior, but don't write any code yet.
+```
+
+Expected: a grounded explanation only - Ask mode won't touch files even if
+the wording implies action.
+
+### Plan mode - design before executing
+
+Switch to **Plan** mode, then:
+
+```
+Plan adding a fire-service (Phase I recall) mode to the elevator
+controller: when active, the car ignores new floor requests, travels
+non-stop to the recall floor (assume floor 1), opens its doors, and
+refuses further dispatch until the mode is cleared. Produce a step-by-step
+implementation plan across elevator_controller.h/.c (and sensor_utils.c if
+needed) before any code is written.
+```
+
+Expected: a structured, reviewable checklist/plan with no file edits yet -
+contrast with Ask's prose-only answer.
+
+### Agent mode - execute end to end
+
+Switch to **Agent** mode, then:
+
+```
+Implement the fire-service (Phase I recall) mode: add a
+fire_service_active flag and a FIRE_SERVICE car_state, update run_cycle so
+the car ignores new requests and travels non-stop to floor 1, opens its
+doors, and blocks dispatch until cleared. Update state_to_string and the
+Makefile self-checks accordingly, then build and run the project to
+confirm every self-check still passes.
+```
+
+Expected: multi-file edits, an autonomous build/self-check loop, and
+iteration on failures - contrast with Ask (no edits) and Plan (edits
+deferred until you approve and switch modes).
+
+### Debrief prompt (after all three)
+
+```
+Compare how Ask, Plan, and Agent mode each handled the fire-service recall
+request. What did each produce, and when would you reach for each one on
+a real embedded task?
+```
