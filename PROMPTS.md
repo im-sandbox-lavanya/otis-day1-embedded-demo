@@ -14,7 +14,7 @@ when to reach for each one.
 Open `src/elevator_controller.c`, delete the `return 0;` stub inside
 `compute_direction`, then type a partial line and pause for ghost text:
 
-```txt
+```
 if (target_floor
 ```
 
@@ -22,7 +22,7 @@ if (target_floor
 
 In `state_to_string`, delete `return NULL;` and type:
 
-```c
+```
 switch (state) {
 ```
 
