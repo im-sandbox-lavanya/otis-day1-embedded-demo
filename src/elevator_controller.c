@@ -22,7 +22,7 @@ int8_t compute_direction(int8_t current_floor, int8_t target_floor) {
 // ---- Code completion target -----------------------------------
 // A car is overweight when car_weight_kg exceeds MAX_CAR_WEIGHT_KG.
 bool is_overweight(float car_weight_kg) {
-    return false; // code completion completes this
+    return car_weight_kg > MAX_CAR_WEIGHT_KG;
 }
 
 // ---- / commands target: /fix -----------------------------------
@@ -36,7 +36,14 @@ bool is_overspeed(float speed_mm_s) {
 // Return a human-readable name for each car_state_t value, e.g. "MOVING_UP".
 // Type the `switch (state) {` line and pause for the multi-line suggestion.
 const char *state_to_string(car_state_t state) {
-    return NULL; // code completion completes this with a switch statement
+    switch (state) {
+        case STATE_MOVING_UP: return "MOVING_UP";
+        case STATE_MOVING_DOWN: return "MOVING_DOWN";
+        case STATE_IDLE: return "IDLE";
+        case STATE_DOORS_OPEN: return "DOORS_OPEN";
+        case STATE_EMERGENCY_STOP: return "EMERGENCY_STOP";
+        default: return "UNKNOWN";
+    }
 }
 
 // ---- Inline chat target (Ctrl+I) ---------------------------------
