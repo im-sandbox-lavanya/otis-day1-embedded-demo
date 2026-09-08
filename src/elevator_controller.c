@@ -47,6 +47,14 @@ bool can_open_doors(const elevator_t *car) {
     return true;
 }
 
+// Obstruction sensor check: reports whether the door edge sensor
+// currently detects something blocking the doorway. Used by the
+// door-closing logic to re-open the doors instead of finishing a close
+// that would pinch a passenger or object.
+bool is_door_obstructed(const elevator_t *car) {
+    return car->obstruction_detected;
+}
+
 // ---- Inline chat target (Ctrl+I) - harder, multi-branch ----------
 // Apply a tiered speed limit based on how many floors remain before the
 // target floor, so the car decelerates on approach:
@@ -82,6 +90,14 @@ void run_cycle(elevator_t *car) {
     if (car->fault_active) {
         car->state = STATE_EMERGENCY_STOP;
         car->speed_mm_s = 0.0f;
+        return;
+    }
+
+    // Safety interlock: if the doors are mid-close and the obstruction
+    // sensor trips, abort the close and re-open the doors instead of
+    // continuing to pinch whatever is in the doorway.
+    if (car->state == STATE_DOOR_CLOSING && is_door_obstructed(car)) {
+        car->state = STATE_DOOR_OPEN;
         return;
     }
 
@@ -127,9 +143,9 @@ int main(void) {
            && strcmp(state_to_string(STATE_IDLE), "IDLE") == 0;
 
     // After the inline-chat fix, a stopped/fault-free car may open its doors...
-    elevator_t stopped = { 5, 5, STATE_DOOR_OPENING, 0.0f, 400.0f, false };
+    elevator_t stopped = { 5, 5, STATE_DOOR_OPENING, 0.0f, 400.0f, false, false };
     // ...but a moving car must not.
-    elevator_t moving = { 5, 8, STATE_MOVING_UP, 1200.0f, 400.0f, false };
+    elevator_t moving = { 5, 8, STATE_MOVING_UP, 1200.0f, 400.0f, false, false };
     bool c5 = can_open_doors(&stopped) == true && can_open_doors(&moving) == false;
 
     // After the harder inline-chat edit, the speed tiers should match:
@@ -143,20 +159,27 @@ int main(void) {
     bool c7 = dispatch_next_floor(pending, 3, 4) == 5;
 
     // run_cycle composes direction + speed tiers + fault checks (needs c1, c3, c6).
-    elevator_t enroute = { 2, 6, STATE_IDLE, 0.0f, 500.0f, false };
+    elevator_t enroute = { 2, 6, STATE_IDLE, 0.0f, 500.0f, false, false };
     run_cycle(&enroute);
     bool c8 = enroute.state == STATE_MOVING_UP && enroute.speed_mm_s == MAX_SPEED_MM_S;
 
     // run_cycle also composes can_open_doors when the car has arrived (needs c1, c5).
-    elevator_t arrived = { 7, 7, STATE_MOVING_UP, 0.0f, 400.0f, false };
+    elevator_t arrived = { 7, 7, STATE_MOVING_UP, 0.0f, 400.0f, false, false };
     run_cycle(&arrived);
     bool c9 = arrived.state == STATE_DOOR_OPEN;
+
+    // run_cycle must re-open the doors if the obstruction sensor trips
+    // while the doors are mid-close, instead of finishing the close.
+    elevator_t obstructed = { 7, 7, STATE_DOOR_CLOSING, 0.0f, 400.0f, false, true };
+    run_cycle(&obstructed);
+    bool c10 = obstructed.state == STATE_DOOR_OPEN;
 
     bool all = _check("compute_direction", c1) & _check("is_overweight", c2)
              & _check("is_overspeed", c3)       & _check("state_to_string", c4)
              & _check("can_open_doors", c5)     & _check("apply_speed_limit", c6)
              & _check("dispatch_next_floor", c7)
-             & _check("run_cycle (moving)", c8) & _check("run_cycle (arrived)", c9);
+             & _check("run_cycle (moving)", c8) & _check("run_cycle (arrived)", c9)
+             & _check("run_cycle (obstruction)", c10);
 
     if (all) {
         printf("\nALL PASS - sample control-loop tick:\n\n");
